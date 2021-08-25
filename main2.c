@@ -1,12 +1,12 @@
 /* ************************************************************************** */
 /*                                                                            */
 /*                                                        :::      ::::::::   */
-/*   main.c                                             :+:      :+:    :+:   */
+/*   main2.c                                            :+:      :+:    :+:   */
 /*                                                    +:+ +:+         +:+     */
 /*   By: acabiac <acabiac@student.42.fr>            +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2021/08/20 18:22:22 by acabiac           #+#    #+#             */
-/*   Updated: 2021/08/24 18:11:58 by acabiac          ###   ########.fr       */
+/*   Updated: 2021/08/25 16:46:37 by acabiac          ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 #include <stdlib.h>
@@ -210,60 +210,55 @@ char **get_cmd1(char *const av[], char *const envp[])
 	res = ft_split(av[2], ' ');
 	if (!res)
 		return (NULL);
-	if (res[0][0] == '.' && access(res[0], X_OK))
-		return (res);
-	else if (res[0][0] == '.')
+	i = 0;
+	while (envp[i] && ft_strncmp("PATH", envp[i], 4))
+		i++;
+	if (!envp[i])
 	{
 		ft_free_tab((void **)res);
 		return (NULL);
 	}
-	else
+	pathes = ft_split(envp[i], ':');
+	if (!pathes)
 	{
-		i = 0;
-		while (envp[i] && ft_strncmp("PATH", envp[i], 4))
-			i++;
-		if (!envp[i])
+		ft_free_tab((void **)res);
+		return (NULL);
+	}
+	i = 0;
+	while (pathes[i])
+	{
+		tmp = ft_strjoin(pathes[i], "/");
+		if (!tmp)
 		{
+			ft_free_tab((void **)pathes);
 			ft_free_tab((void **)res);
 			return (NULL);
 		}
-		pathes = ft_split(envp[i], ':');
-		if (!pathes)
+		free(pathes[i]);
+		pathes[i] = tmp;
+		tmp = ft_strjoin(pathes[i], res[0]);
+		if (!tmp)
 		{
+			ft_free_tab((void **)pathes);
 			ft_free_tab((void **)res);
 			return (NULL);
 		}
-		i = 0;
-		while (pathes[i])
+		else if (!access(tmp, X_OK))
 		{
-			tmp = ft_strjoin(pathes[i], "/");
-			if (!tmp)
-			{
-				ft_free_tab((void **)pathes);
-				ft_free_tab((void **)res);
-				return (NULL);
-			}
-			free(pathes[i]);
-			pathes[i] = tmp;
-			tmp = ft_strjoin(pathes[i], res[0]);
-			if (!tmp)
-			{
-				ft_free_tab((void **)pathes);
-				ft_free_tab((void **)res);
-				return (NULL);
-			}
-			else if (!access(tmp, X_OK))
-			{
-				free(res[0]);
-				res[0] = tmp;
-				ft_free_tab((void **)pathes);
-				return (res);
-			}
-			free(tmp);
-			i++;
+			free(res[0]);
+			res[0] = tmp;
+			ft_free_tab((void **)pathes);
+			return (res);
 		}
+		free(tmp);
+		i++;
 	}
 	ft_free_tab((void **)pathes);
+	if (!access(res[0], X_OK))
+		return (res);
+	write(2, av[0], ft_strlen(av[0]));
+	write(2, ": ", 2);
+	perror(res[0]);
 	ft_free_tab((void **)res);
 	return (NULL);
 }
@@ -278,60 +273,55 @@ char **get_cmd2(char *const av[], char *const envp[])
 	res = ft_split(av[3], ' ');
 	if (!res)
 		return (NULL);
-	if (res[0][0] == '.' && access(res[0], X_OK))
-		return (res);
-	else if (res[0][0] == '.')
+	i = 0;
+	while (envp[i] && ft_strncmp("PATH", envp[i], 4))
+		i++;
+	if (!envp[i])
 	{
 		ft_free_tab((void **)res);
 		return (NULL);
 	}
-	else
+	pathes = ft_split(envp[i], ':');
+	if (!pathes)
 	{
-		i = 0;
-		while (envp[i] && ft_strncmp("PATH", envp[i], 4))
-			i++;
-		if (!envp[i])
+		ft_free_tab((void **)res);
+		return (NULL);
+	}
+	i = 0;
+	while (pathes[i])
+	{
+		tmp = ft_strjoin(pathes[i], "/");
+		if (!tmp)
 		{
+			ft_free_tab((void **)pathes);
 			ft_free_tab((void **)res);
 			return (NULL);
 		}
-		pathes = ft_split(envp[i], ':');
-		if (!pathes)
+		free(pathes[i]);
+		pathes[i] = tmp;
+		tmp = ft_strjoin(pathes[i], res[0]);
+		if (!tmp)
 		{
+			ft_free_tab((void **)pathes);
 			ft_free_tab((void **)res);
 			return (NULL);
 		}
-		i = 0;
-		while (pathes[i])
+		else if (!access(tmp, X_OK))
 		{
-			tmp = ft_strjoin(pathes[i], "/");
-			if (!tmp)
-			{
-				ft_free_tab((void **)pathes);
-				ft_free_tab((void **)res);
-				return (NULL);
-			}
-			free(pathes[i]);
-			pathes[i] = tmp;
-			tmp = ft_strjoin(pathes[i], res[0]);
-			if (!tmp)
-			{
-				ft_free_tab((void **)pathes);
-				ft_free_tab((void **)res);
-				return (NULL);
-			}
-			else if (!access(tmp, X_OK))
-			{
-				free(res[0]);
-				res[0] = tmp;
-				ft_free_tab((void **)pathes);
-				return (res);
-			}
-			free(tmp);
-			i++;
+			free(res[0]);
+			res[0] = tmp;
+			ft_free_tab((void **)pathes);
+			return (res);
 		}
+		free(tmp);
+		i++;
 	}
 	ft_free_tab((void **)pathes);
+	if (!access(res[0], X_OK))
+		return (res);
+	write(2, av[0], ft_strlen(av[0]));
+	write(2, ": ", 2);
+	perror(res[0]);
 	ft_free_tab((void **)res);
 	return (NULL);
 }
@@ -345,19 +335,21 @@ int	left_side(int pfd[2], char *const av[], char *const envp[])
 	close(pfd[0]);
 	if (fd == -1)
 	{
+		write(2, av[0], ft_strlen(av[0]));
+		write(2, ": ", 2);
 		perror(av[1]);
 		close(pfd[1]);
 		return (5);
 	}
-	if (dup2(fd, STDIN_FILENO))
+	if (dup2(fd, STDIN_FILENO) == -1)
 	{
-		perror(strerror(errno));
+		perror(av[0]);
 		close(pfd[1]);
 		return (6);
 	}
-	if (dup2(pfd[1], STDOUT_FILENO))
+	if (dup2(pfd[1], STDOUT_FILENO) == -1)
 	{
-		perror(strerror(errno));
+		perror(av[0]);
 		close(pfd[1]);
 		return (7);
 	}
@@ -365,11 +357,11 @@ int	left_side(int pfd[2], char *const av[], char *const envp[])
 	cmd_av = get_cmd1(av, envp);
 	if (!cmd_av)
 	{
-		perror(strerror(errno));
 		close(pfd[1]);
 		return (8);
 	}
 	execve(cmd_av[0], cmd_av, envp);
+	perror(av[0]);
 	close(pfd[1]);
 	ft_free_tab((void **)cmd_av);
 	return (9);
@@ -384,19 +376,21 @@ int	right_side(int pfd[2], char *const av[], char *const envp[])
 	fd = open(av[4], O_WRONLY | O_CREAT | O_TRUNC, 0664);
 	if (fd == -1)
 	{
-		perror(strerror(errno));
+		write(2, av[0], ft_strlen(av[0]));
+		write(2, ": ", 2);
+		perror(av[4]);
 		close(pfd[0]);
 		return (10);
 	}
 	if (dup2(fd, STDOUT_FILENO) == -1)
 	{
-		perror(strerror(errno));
+		perror(av[0]);
 		close(pfd[0]);
 		return (11);
 	}
-	if (dup2(pfd[0], STDIN_FILENO))
+	if (dup2(pfd[0], STDIN_FILENO) == -1)
 	{
-		perror(strerror(errno));
+		perror(av[0]);
 		close(pfd[0]);
 		return (12);
 	}
@@ -404,11 +398,11 @@ int	right_side(int pfd[2], char *const av[], char *const envp[])
 	cmd_av = get_cmd2(av, envp);
 	if (!cmd_av)
 	{
-		perror(strerror(errno));
 		close(pfd[0]);
 		return (13);
 	}
 	execve(cmd_av[0], cmd_av, envp);
+	perror(av[0]);
 	close(pfd[0]);
 	ft_free_tab((void **)cmd_av);
 	return (14);
@@ -424,13 +418,13 @@ int	main(int ac, char *const av[], char *const envp[])
 		return (1);
 	else if (pipe(pfd) == -1)
 	{
-		perror(strerror(errno));
+		perror(av[0]);
 		return (2);
 	}
 	pid1 = fork();
 	if (pid1 == -1)
 	{
-		perror(strerror(errno));
+		perror(av[0]);
 		close(pfd[0]);
 		close(pfd[1]);
 		return (3);
@@ -442,7 +436,7 @@ int	main(int ac, char *const av[], char *const envp[])
 		pid2 = fork();
 		if (pid2 == -1)
 		{
-			perror(strerror(errno));
+			perror(av[0]);
 			close(pfd[0]);
 			close(pfd[1]);
 			return (4);

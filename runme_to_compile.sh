@@ -1,1 +1,1 @@
-gcc -Wall -Wextra -Werror main.c -o pipex
+gcc -Wall -Wextra -Werror main2.c -o pipex
