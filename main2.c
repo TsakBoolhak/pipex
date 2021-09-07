@@ -6,9 +6,10 @@
 /*   By: acabiac <acabiac@student.42.fr>            +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2021/08/20 18:22:22 by acabiac           #+#    #+#             */
-/*   Updated: 2021/08/25 16:46:37 by acabiac          ###   ########.fr       */
+/*   Updated: 2021/09/07 21:28:59 by acabiac          ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
+
 #include <stdlib.h>
 #include <unistd.h>
 #include <fcntl.h>
@@ -200,129 +201,113 @@ char	**ft_split(char const *s, char c)
 	return (result);
 }
 
-char **get_cmd1(char *const av[], char *const envp[])
+int	init_pathes(char *cmd, char **envp, char ***ret, char ***pathes)
 {
-	char	**res;
-	char	*tmp;
-	char	**pathes;
-	int		i;
+	int	i;
 
-	res = ft_split(av[2], ' ');
-	if (!res)
-		return (NULL);
+	*pathes = NULL;
+	*ret = ft_split(cmd, ' ');
+	if (*ret == NULL)
+		return (1);
 	i = 0;
 	while (envp[i] && ft_strncmp("PATH", envp[i], 4))
 		i++;
 	if (!envp[i])
+		return (0);
+	*pathes = ft_split(envp[i], ':');
+	if (!*pathes)
 	{
-		ft_free_tab((void **)res);
-		return (NULL);
+		ft_free_tab((void **)ret);
+		return (1);
 	}
-	pathes = ft_split(envp[i], ':');
-	if (!pathes)
+	return (0);
+}
+
+int	free_and_return(char **pathes, char **ret, int error)
+{
+	ft_free_tab((void **)pathes);
+	ft_free_tab((void **)ret);
+	return (error);
+}
+
+int	check_path(char **path, char **ret, char ***pathes)
+{
+	char	*tmp;
+
+	tmp = ft_strjoin(*path, "/");
+	if (!tmp)
+		return (free_and_return(*pathes, ret, -1));
+	free(*path);
+	*path = tmp;
+	tmp = ft_strjoin(*path, *ret);
+	if (!tmp)
+		return (free_and_return(*pathes, ret, -1));
+	else if (!access(tmp, X_OK))
 	{
-		ft_free_tab((void **)res);
-		return (NULL);
+		free(*ret);
+		*ret = tmp;
+		ft_free_tab((void **)*pathes);
+		return (0);
 	}
+	free(tmp);
+	return (1);
+}
+
+char	**get_cmd1(char *const av[], char *const envp[])
+{
+	char	**ret;
+	char	**pathes;
+	int		i;
+	int		check;
+
+	if (init_pathes((char *)av[2], (char **)envp, &ret, &pathes))
+		return (NULL);
 	i = 0;
-	while (pathes[i])
+	while (pathes && pathes[i])
 	{
-		tmp = ft_strjoin(pathes[i], "/");
-		if (!tmp)
-		{
-			ft_free_tab((void **)pathes);
-			ft_free_tab((void **)res);
+		check = check_path(&pathes[i], &ret[0], &pathes);
+		if (check == -1)
 			return (NULL);
-		}
-		free(pathes[i]);
-		pathes[i] = tmp;
-		tmp = ft_strjoin(pathes[i], res[0]);
-		if (!tmp)
-		{
-			ft_free_tab((void **)pathes);
-			ft_free_tab((void **)res);
-			return (NULL);
-		}
-		else if (!access(tmp, X_OK))
-		{
-			free(res[0]);
-			res[0] = tmp;
-			ft_free_tab((void **)pathes);
-			return (res);
-		}
-		free(tmp);
+		else if (!check)
+			return (ret);
 		i++;
 	}
 	ft_free_tab((void **)pathes);
-	if (!access(res[0], X_OK))
-		return (res);
+	if (!access(ret[0], X_OK))
+		return (ret);
 	write(2, av[0], ft_strlen(av[0]));
 	write(2, ": ", 2);
-	perror(res[0]);
-	ft_free_tab((void **)res);
+	perror(ret[0]);
+	ft_free_tab((void **)ret);
 	return (NULL);
 }
 
-char **get_cmd2(char *const av[], char *const envp[])
+char	**get_cmd2(char *const av[], char *const envp[])
 {
-	char	**res;
-	char	*tmp;
+	char	**ret;
 	char	**pathes;
 	int		i;
+	int		check;
 
-	res = ft_split(av[3], ' ');
-	if (!res)
+	if (init_pathes((char *)av[3], (char **)envp, &ret, &pathes))
 		return (NULL);
 	i = 0;
-	while (envp[i] && ft_strncmp("PATH", envp[i], 4))
-		i++;
-	if (!envp[i])
+	while (pathes && pathes[i])
 	{
-		ft_free_tab((void **)res);
-		return (NULL);
-	}
-	pathes = ft_split(envp[i], ':');
-	if (!pathes)
-	{
-		ft_free_tab((void **)res);
-		return (NULL);
-	}
-	i = 0;
-	while (pathes[i])
-	{
-		tmp = ft_strjoin(pathes[i], "/");
-		if (!tmp)
-		{
-			ft_free_tab((void **)pathes);
-			ft_free_tab((void **)res);
+		check = check_path(&pathes[i], &ret[0], &pathes);
+		if (check == -1)
 			return (NULL);
-		}
-		free(pathes[i]);
-		pathes[i] = tmp;
-		tmp = ft_strjoin(pathes[i], res[0]);
-		if (!tmp)
-		{
-			ft_free_tab((void **)pathes);
-			ft_free_tab((void **)res);
-			return (NULL);
-		}
-		else if (!access(tmp, X_OK))
-		{
-			free(res[0]);
-			res[0] = tmp;
-			ft_free_tab((void **)pathes);
-			return (res);
-		}
-		free(tmp);
+		else if (!check)
+			return (ret);
 		i++;
 	}
 	ft_free_tab((void **)pathes);
-	if (!access(res[0], X_OK))
-		return (res);
+	if (!access(ret[0], X_OK))
+		return (ret);
 	write(2, av[0], ft_strlen(av[0]));
 	write(2, ": ", 2);
-	perror(res[0]);
-	ft_free_tab((void **)res);
+	perror(ret[0]);
+	ft_free_tab((void **)ret);
 	return (NULL);
 }
 
@@ -413,6 +398,7 @@ int	main(int ac, char *const av[], char *const envp[])
 	int	pfd[2];
 	int	pid1;
 	int	pid2;
+	int	ret;
 
 	if (ac != 5)
 		return (1);
@@ -447,12 +433,12 @@ int	main(int ac, char *const av[], char *const envp[])
 		{
 			close(pfd[0]);
 			close(pfd[1]);
-			while (wait(NULL) > 0)
+			ret = 1;
+			while (ret > 0)
 			{
-				;
+				ret = wait(NULL);
 			}
 			return (0);
 		}
-
 	}
 }
