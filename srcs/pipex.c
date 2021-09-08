@@ -6,7 +6,7 @@
 /*   By: acabiac <acabiac@student.42.fr>            +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2021/08/20 18:22:22 by acabiac           #+#    #+#             */
-/*   Updated: 2021/09/09 00:13:54 by acabiac          ###   ########.fr       */
+/*   Updated: 2021/09/09 00:27:37 by acabiac          ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -95,7 +95,6 @@ int	main(int ac, char *const av[], char *const envp[])
 	int	pfd[2];
 	int	pid1;
 	int	pid2;
-	int	ret;
 
 	if (ac != 5)
 		return (1);
@@ -113,8 +112,7 @@ int	main(int ac, char *const av[], char *const envp[])
 		return (right_side(pfd, av, envp));
 	close(pfd[0]);
 	close(pfd[1]);
-	ret = 1;
-	while (ret > 0 && errno != ECHILD)
-		ret = wait(NULL);
+	while (errno != ECHILD)
+		wait(NULL);
 	return (0);
 }
