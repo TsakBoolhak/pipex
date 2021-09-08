@@ -6,7 +6,7 @@
 /*   By: acabiac <acabiac@student.42.fr>            +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2021/08/20 18:22:22 by acabiac           #+#    #+#             */
-/*   Updated: 2021/09/08 22:51:05 by acabiac          ###   ########.fr       */
+/*   Updated: 2021/09/09 00:13:54 by acabiac          ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -18,62 +18,20 @@
 #include <stdio.h>
 #include "pipex.h"
 
-char	**get_cmd1(char *const av[], char *const envp[])
+char	**get_cmd_path(char *const av[], char *const envp[], char *cmd)
 {
 	char	**ret;
 	char	**pathes;
-	int		i;
-	int		check;
 
-	if (init_pathes((char *)av[2], (char **)envp, &ret, &pathes))
-		return (NULL);
-	i = 0;
-	while (pathes && pathes[i])
+	if (init_pathes(cmd, (char **)envp, &ret, &pathes))
 	{
-		check = check_path(&pathes[i], &ret[0], &pathes);
-		if (check == -1)
-			return (NULL);
-		else if (!check)
-			return (ret);
-		i++;
-	}
-	ft_free_tab((void **)pathes);
-	if (!access(ret[0], X_OK))
-		return (ret);
-	write(2, av[0], ft_strlen(av[0]));
-	write(2, ": ", 2);
-	perror(ret[0]);
-	ft_free_tab((void **)ret);
-	return (NULL);
-}
-
-char	**get_cmd2(char *const av[], char *const envp[])
-{
-	char	**ret;
-	char	**pathes;
-	int		i;
-	int		check;
-
-	if (init_pathes((char *)av[3], (char **)envp, &ret, &pathes))
+		perror(av[0]);
 		return (NULL);
-	i = 0;
-	while (pathes && pathes[i])
-	{
-		check = check_path(&pathes[i], &ret[0], &pathes);
-		if (check == -1)
-			return (NULL);
-		else if (!check)
-			return (ret);
-		i++;
 	}
-	ft_free_tab((void **)pathes);
-	if (!access(ret[0], X_OK))
+	if (check_pathes(av[0], &ret, &pathes))
+		return (NULL);
+	else
 		return (ret);
-	write(2, av[0], ft_strlen(av[0]));
-	write(2, ": ", 2);
-	perror(ret[0]);
-	ft_free_tab((void **)ret);
-	return (NULL);
 }
 
 int	left_side(int pfd[2], char *const av[], char *const envp[])
@@ -95,7 +53,7 @@ int	left_side(int pfd[2], char *const av[], char *const envp[])
 	if (dup2(pfd[1], STDOUT_FILENO) == -1)
 		return (close_and_print_error(av[0], pfd[1], -1, 7));
 	close(pfd[1]);
-	cmd_av = get_cmd1(av, envp);
+	cmd_av = get_cmd_path(av, envp, av[2]);
 	if (!cmd_av)
 		return (8);
 	execve(cmd_av[0], cmd_av, envp);
@@ -123,7 +81,7 @@ int	right_side(int pfd[2], char *const av[], char *const envp[])
 	if (dup2(pfd[0], STDIN_FILENO) == -1)
 		return (close_and_print_error(av[0], pfd[0], -1, 12));
 	close(pfd[0]);
-	cmd_av = get_cmd2(av, envp);
+	cmd_av = get_cmd_path(av, envp, av[3]);
 	if (!cmd_av)
 		return (13);
 	execve(cmd_av[0], cmd_av, envp);

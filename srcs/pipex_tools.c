@@ -6,7 +6,7 @@
 /*   By: acabiac <acabiac@student.42.fr>            +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2021/09/08 22:28:26 by acabiac           #+#    #+#             */
-/*   Updated: 2021/09/08 22:36:14 by acabiac          ###   ########.fr       */
+/*   Updated: 2021/09/09 00:11:58 by acabiac          ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -43,6 +43,31 @@ int	free_and_return(char **pathes, char **ret, int error)
 	ft_free_tab((void **)pathes);
 	ft_free_tab((void **)ret);
 	return (error);
+}
+
+int	check_pathes(char *name, char ***ret, char ***pathes)
+{
+	int	i;
+	int	check;
+
+	i = 0;
+	while (*pathes && (*pathes)[i])
+	{
+		check = check_path(&((*pathes)[i]), &((*ret)[0]), pathes);
+		if (check == -1)
+			return (close_and_print_error(name, -1, -1, -1));
+		else if (!check)
+			return (0);
+		i++;
+	}
+	ft_free_tab((void **)*pathes);
+	if (!access((*ret)[0], X_OK))
+		return (0);
+	write(2, name, ft_strlen(name));
+	write(2, ": ", 2);
+	perror((*ret)[0]);
+	ft_free_tab((void **)*ret);
+	return (-1);
 }
 
 int	check_path(char **path, char **ret, char ***pathes)

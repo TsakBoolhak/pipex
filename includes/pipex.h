@@ -6,7 +6,7 @@
 /*   By: acabiac <acabiac@student.42.fr>            +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2021/09/08 21:44:27 by acabiac           #+#    #+#             */
-/*   Updated: 2021/09/08 22:32:47 by acabiac          ###   ########.fr       */
+/*   Updated: 2021/09/09 00:12:08 by acabiac          ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -33,6 +33,7 @@ char	*ft_strjoin(char const *src, char const *to_append);
 */
 int		init_pathes(char *cmd, char **envp, char ***ret, char ***pathes);
 int		free_and_return(char **pathes, char **ret, int error);
+int		check_pathes(char *name, char ***ret, char ***pathes);
 int		check_path(char **path, char **ret, char ***pathes);
 int		close_and_print_error(char *str, int fd1, int fd2, int error);
 
