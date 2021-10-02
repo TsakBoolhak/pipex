@@ -5,12 +5,16 @@ BONUSFOLD	= srcs/
 SRCS_BONUS	=	${SRCFOLD}pipex.c \
 				${SRCFOLD}ft_split.c \
 				${SRCFOLD}basic_tools.c \
-				${SRCFOLD}pipex_tools.c
+				${SRCFOLD}basic_tools2.c \
+				${SRCFOLD}pipex_tools.c \
+				${SRCFOLD}pipex_tools2.c
 
 SRCS		=	${SRCFOLD}pipex.c \
 				${SRCFOLD}ft_split.c \
 				${SRCFOLD}basic_tools.c \
-				${SRCFOLD}pipex_tools.c
+				${SRCFOLD}basic_tools2.c \
+				${SRCFOLD}pipex_tools.c \
+				${SRCFOLD}pipex_tools2.c
 
 OBJS		= ${SRCS:.c=.o}
 

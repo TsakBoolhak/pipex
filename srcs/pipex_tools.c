@@ -6,7 +6,7 @@
 /*   By: acabiac <acabiac@student.42.fr>            +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2021/09/08 22:28:26 by acabiac           #+#    #+#             */
-/*   Updated: 2021/09/09 00:11:58 by acabiac          ###   ########.fr       */
+/*   Updated: 2021/10/02 01:02:01 by acabiac          ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -25,7 +25,7 @@ int	init_pathes(char *cmd, char **envp, char ***ret, char ***pathes)
 	if (*ret == NULL)
 		return (1);
 	i = 0;
-	while (envp[i] && ft_strncmp("PATH", envp[i], 4))
+	while (envp[i] && ft_strncmp("PATH=", envp[i], 5))
 		i++;
 	if (!envp[i])
 		return (0);
@@ -61,8 +61,6 @@ int	check_pathes(char *name, char ***ret, char ***pathes)
 		i++;
 	}
 	ft_free_tab((void **)*pathes);
-	if (!access((*ret)[0], X_OK))
-		return (0);
 	write(2, name, ft_strlen(name));
 	write(2, ": ", 2);
 	perror((*ret)[0]);
