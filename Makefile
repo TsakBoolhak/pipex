@@ -1,13 +1,8 @@
 SRCFOLD		= srcs/
 
-BONUSFOLD	= srcs/
+BONUSFOLD	= srcs_bonus/
 
-SRCS_BONUS	=	${SRCFOLD}pipex.c \
-				${SRCFOLD}ft_split.c \
-				${SRCFOLD}basic_tools.c \
-				${SRCFOLD}basic_tools2.c \
-				${SRCFOLD}pipex_tools.c \
-				${SRCFOLD}pipex_tools2.c
+SRCS_BONUS	=	${BONUSFOLD}pipex_bonus.c
 
 SRCS		=	${SRCFOLD}pipex.c \
 				${SRCFOLD}ft_split.c \
@@ -28,7 +23,7 @@ CC			= clang
 
 CFLAGS		= -Wall -Wextra -Werror
 
-IFLAGS		= -Iincludes
+IFLAGS		= -Iincludes -Ilibft
 
 RM			= rm -f
 
@@ -39,7 +34,8 @@ ${NAME}:		 ${OBJS}
 	${CC} ${IFLAGS} ${CFLAGS} ${OBJS} -o ${NAME}
 
 ${NAME_BONUS}:		 ${OBJS_BONUS}
-	${CC} ${IFLAGS} ${CFLAGS} ${OBJS_BONUS} -o ${NAME_BONUS}
+	make -C libft
+	${CC} ${IFLAGS} ${CFLAGS} ${OBJS_BONUS} -o ${NAME_BONUS} -Llibft -lft
 
 all:			${NAME}
 
@@ -50,12 +46,14 @@ clean:
 
 clean_bonus:
 	${RM} ${OBJS_BONUS}
+	make clean -C libft
 
 fclean:			clean
 	${RM} ${NAME}
 
 fclean_bonus:	clean_bonus
 	${RM} ${NAME_BONUS}
+	make fclean -C libft
 
 re:				fclean all
 
