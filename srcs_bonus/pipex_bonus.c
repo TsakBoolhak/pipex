@@ -6,7 +6,7 @@
 /*   By: acabiac <acabiac@student.42.fr>            +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2021/10/14 21:43:40 by acabiac           #+#    #+#             */
-/*   Updated: 2021/10/15 18:05:37 by acabiac          ###   ########.fr       */
+/*   Updated: 2021/10/17 13:45:50 by acabiac          ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -17,7 +17,8 @@
 
 void	put_error(t_error errcode)
 {
-	static char *err_msg[] = {"Memory allocation failed" , "Too few argument given to the program"};
+	static char	*err_msg[] = {"Memory allocation failed",
+		"Too few argument given to the program"};
 
 	if (errcode == PERROR)
 		perror(NULL);
