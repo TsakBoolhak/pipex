@@ -6,14 +6,17 @@
 /*   By: acabiac <acabiac@student.42.fr>            +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2021/10/14 21:43:40 by acabiac           #+#    #+#             */
-/*   Updated: 2021/10/18 01:28:18 by acabiac          ###   ########.fr       */
+/*   Updated: 2021/10/18 18:23:04 by acabiac          ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
 #include "libft.h"
 #include "pipex_bonus.h"
+#include <unistd.h>
 #include <stdio.h>
 #include <errno.h>
+#include <sys/types.h>
+#include <sys/wait.h>
 
 void	put_error(t_error errcode)
 {
@@ -49,6 +52,10 @@ int	fill_cmd_list(int ac, char **av, t_pipex *pipex)
 int	free_and_return(t_pipex *pipex, int ret, t_error errcode)
 {
 	ft_lstclear(&(pipex->cmdlist), NULL);
+	if ((pipex->pfd)[0] > 2)
+		close((pipex->pfd)[0]);
+	if ((pipex->pfd)[1] > 2)
+		close((pipex->pfd)[1]);
 	if (errcode > -2)
 		put_error(errcode);
 	return (ret);
@@ -59,11 +66,55 @@ void	ft_print_node(void *cmd)
 	ft_putendl_fd(cmd, 1);
 }
 
+int	handle_child(t_pipex *pipex, t_list *node)
+{
+	if (node == pipex->cmdlist)
+	{
+		if (pipex->infile)
+		{
+			ft_putstr_fd("Handling infile: ", 1);
+			ft_putendl_fd(pipex->infile, 1);
+		}
+	}
+	ft_putstr_fd("Handling cmd: ", 1);
+	ft_putendl_fd((char *)(node->content), 1);
+	if (!(node->next))
+	{
+		ft_putstr_fd("Handling outfile: ", 1);
+		ft_putendl_fd(pipex->outfile, 1);
+	}
+	close((pipex->pfd)[0]);
+	close((pipex->pfd)[1]);
+	return (0);
+}
+
+int	main_loop(t_pipex *pipex)
+{
+	int	pid1;
+	t_list	*node;
+
+	node = pipex->cmdlist;
+	while (node)
+	{
+		if (pipe(pipex->pfd) == -1)
+			return (free_and_return(pipex, 1, PERROR));
+		pid1 = fork();
+		if (pid1 == -1)
+			return (free_and_return(pipex, 1, PERROR));
+		else if (!pid1)
+			return (handle_child(pipex, node));
+		close((pipex->pfd)[0]);
+		close((pipex->pfd)[1]);
+		node = node->next;
+	}
+	return (0);
+}
+
 int	init_pipex(t_pipex *pipex, int ac, char **av, char **envp)
 {
+	ft_memset(pipex, 0, sizeof(t_pipex));
 	if (ac < 5)
 		return (free_and_return(pipex, 1, ERR_TOO_FEW_ARG));
-	ft_memset(pipex, 0, sizeof(t_pipex));
 	pipex->here_doc = (ft_strcmp("here_doc", av[1]) == 0);
 	if (pipex->here_doc)
 		pipex->delim = av[2];
@@ -84,6 +135,8 @@ int	main(int ac, char **av, char **envp)
 
 	if (init_pipex(&pipex, ac, av, envp))
 		return (1);
-	ft_lstiter(pipex.cmdlist, &ft_print_node);
+	main_loop(&pipex);
+	while (errno != ECHILD)
+		wait(NULL);
 	return (free_and_return(&pipex, 1, -2));
 }
