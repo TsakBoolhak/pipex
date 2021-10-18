@@ -6,7 +6,7 @@
 /*   By: acabiac <acabiac@student.42.fr>            +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2021/10/14 21:43:40 by acabiac           #+#    #+#             */
-/*   Updated: 2021/10/18 18:23:04 by acabiac          ###   ########.fr       */
+/*   Updated: 2021/10/18 19:22:16 by acabiac          ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -74,6 +74,11 @@ int	handle_child(t_pipex *pipex, t_list *node)
 		{
 			ft_putstr_fd("Handling infile: ", 1);
 			ft_putendl_fd(pipex->infile, 1);
+		}
+		else
+		{
+			ft_putstr_fd("Handling here_doc: delimiter is : ", 1);
+			ft_putendl_fd(pipex->delim, 1);
 		}
 	}
 	ft_putstr_fd("Handling cmd: ", 1);
