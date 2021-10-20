@@ -6,7 +6,7 @@
 /*   By: acabiac <acabiac@student.42.fr>            +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2021/10/14 21:43:40 by acabiac           #+#    #+#             */
-/*   Updated: 2021/10/18 19:22:16 by acabiac          ###   ########.fr       */
+/*   Updated: 2021/10/20 02:13:51 by acabiac          ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -49,9 +49,14 @@ int	fill_cmd_list(int ac, char **av, t_pipex *pipex)
 	return (0);
 }
 
-int	free_and_return(t_pipex *pipex, int ret, t_error errcode)
+int	free_and_return(t_pipex *pipex, int *pfd, int ret, t_error errcode)
 {
 	ft_lstclear(&(pipex->cmdlist), NULL);
+	if (pfd)
+	{
+		close(pfd[0]);
+		close(pfd[1]);
+	}
 	if ((pipex->pfd)[0] > 2)
 		close((pipex->pfd)[0]);
 	if ((pipex->pfd)[1] > 2)
@@ -66,50 +71,69 @@ void	ft_print_node(void *cmd)
 	ft_putendl_fd(cmd, 1);
 }
 
-int	handle_child(t_pipex *pipex, t_list *node)
+int	handle_child(t_pipex *pipex, int *pfd, t_list *node)
 {
+	int	fd;
+
 	if (node == pipex->cmdlist)
 	{
-		if (pipex->infile)
-		{
-			ft_putstr_fd("Handling infile: ", 1);
-			ft_putendl_fd(pipex->infile, 1);
-		}
-		else
+		if (pipex->here_doc)
 		{
 			ft_putstr_fd("Handling here_doc: delimiter is : ", 1);
 			ft_putendl_fd(pipex->delim, 1);
 		}
+		else
+		{
+			ft_putstr_fd("Handling infile: ", 1);
+			ft_putendl_fd(pipex->infile, 1);
+			close(pfd[0]);
+			fd = open(pipex->infile, O_RDONLY);
+			if (fd == -1)
+				return (free_and_return(pipex, pfd, 1, PERROR));
+			else if (dup2(fd, STDIN_FILENO) == -1)
+				return (free_and_return(pipex, pfd, 1, PERROR));
+			close(fd);
+		}
+		if (dup2(pfd[1], STDOUT_FILENO) == -1)
+			return (free_and_return(pipex, pfd, 1, PERROR));
+		close(pfd[1]);
 	}
-	ft_putstr_fd("Handling cmd: ", 1);
-	ft_putendl_fd((char *)(node->content), 1);
+	else
+	{
+		// recup ancienne sortie pr la rediriger en entrée 
+	}
+	if (node->next)
+	{
+		// stocker la sortie dans la structure
+	}
 	if (!(node->next))
 	{
+		//gerer le outfile
 		ft_putstr_fd("Handling outfile: ", 1);
 		ft_putendl_fd(pipex->outfile, 1);
 	}
-	close((pipex->pfd)[0]);
-	close((pipex->pfd)[1]);
+	ft_putstr_fd("Handling cmd: ", 1);
+	ft_putendl_fd((char *)(node->content), 1);
+	//exec la cmd
 	return (0);
 }
 
 int	main_loop(t_pipex *pipex)
 {
-	int	pid1;
+	int		pid;
+	int		pfd[2];
 	t_list	*node;
 
 	node = pipex->cmdlist;
 	while (node)
 	{
-		if (pipe(pipex->pfd) == -1)
-			return (free_and_return(pipex, 1, PERROR));
-		pid1 = fork();
-		if (pid1 == -1)
-			return (free_and_return(pipex, 1, PERROR));
-		else if (!pid1)
-			return (handle_child(pipex, node));
-		close((pipex->pfd)[0]);
-		close((pipex->pfd)[1]);
+		if (node->next && pipe(pfd) == -1)
+			return (free_and_return(pipex, NULL, 1, PERROR));
+		pid = fork();
+		if (pid == -1)
+			return (free_and_return(pipex, pfd, 1, PERROR));
+		else if (!pid)
+			return (handle_child(pipex, pfd, node));
 		node = node->next;
 	}
 	return (0);
@@ -119,7 +143,7 @@ int	init_pipex(t_pipex *pipex, int ac, char **av, char **envp)
 {
 	ft_memset(pipex, 0, sizeof(t_pipex));
 	if (ac < 5)
-		return (free_and_return(pipex, 1, ERR_TOO_FEW_ARG));
+		return (free_and_return(pipex, NULL, 1, ERR_TOO_FEW_ARG));
 	pipex->here_doc = (ft_strcmp("here_doc", av[1]) == 0);
 	if (pipex->here_doc)
 		pipex->delim = av[2];
@@ -128,9 +152,9 @@ int	init_pipex(t_pipex *pipex, int ac, char **av, char **envp)
 	pipex->outfile = av[ac - 1];
 	pipex->envp = envp;
 	if (pipex->here_doc && ac < 6)
-		return (free_and_return(pipex, 1, ERR_TOO_FEW_ARG));
+		return (free_and_return(pipex, NULL, 1, ERR_TOO_FEW_ARG));
 	if (fill_cmd_list(ac, av, pipex))
-		return (free_and_return(pipex, 1, ERR_MALLOC));
+		return (free_and_return(pipex, NULL, 1, ERR_MALLOC));
 	return (0);
 }
 
@@ -143,5 +167,5 @@ int	main(int ac, char **av, char **envp)
 	main_loop(&pipex);
 	while (errno != ECHILD)
 		wait(NULL);
-	return (free_and_return(&pipex, 1, -2));
+	return (free_and_return(&pipex, NULL, 1, -2));
 }
