@@ -6,7 +6,7 @@
 /*   By: acabiac <acabiac@student.42.fr>            +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2021/10/14 21:40:15 by acabiac           #+#    #+#             */
-/*   Updated: 2021/10/18 17:51:28 by acabiac          ###   ########.fr       */
+/*   Updated: 2021/10/22 15:31:38 by acabiac          ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -25,6 +25,7 @@ typedef struct s_pipex
 	t_list	*cmdlist;
 	int		here_doc;
 	int		pfd[2];
+	int		fd[2];
 	char	*delim;
 	char	*infile;
 	char	*outfile;

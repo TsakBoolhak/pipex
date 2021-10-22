@@ -6,7 +6,7 @@
 /*   By: acabiac <acabiac@student.42.fr>            +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2021/10/14 21:43:40 by acabiac           #+#    #+#             */
-/*   Updated: 2021/10/20 22:48:55 by acabiac          ###   ########.fr       */
+/*   Updated: 2021/10/22 16:39:47 by acabiac          ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -52,14 +52,15 @@ int	fill_cmd_list(int ac, char **av, t_pipex *pipex)
 	return (0);
 }
 
-int	free_and_return(t_pipex *pipex, int *pfd, int ret, t_error errcode)
+int	free_and_return(t_pipex *pipex, int ret, t_error errcode)
 {
 	ft_lstclear(&(pipex->cmdlist), NULL);
-	if (pfd)
-	{
-		close(pfd[0]);
-		close(pfd[1]);
-	}
+	if (!access(".here_doc_tmp", F_OK))
+		unlink(".here_doc_tmp");
+	if (pipex->fd[0] > 2)
+		close(pipex->fd[0]);
+	if (pipex->fd[1] > 2)
+		close(pipex->fd[1]);
 	if ((pipex->pfd)[0] > 2)
 		close((pipex->pfd)[0]);
 	if ((pipex->pfd)[1] > 2)
@@ -201,85 +202,8 @@ char	**get_cmd_path(char *const envp[], char *cmd)
 		return (ret);
 }
 
-/*int	handle_child(t_pipex *pipex, int *pfd, t_list *node)
-{
-	int		fd;
-	char	**cmd_av;
-
-	ft_putendl_fd(node->content, 2);
-	if (node == pipex->cmdlist)
-	{
-		if (pipex->here_doc)
-		{
-			ft_putstr_fd("Handling here_doc: delimiter is : ", 1);
-			ft_putendl_fd(pipex->delim, 1);
-		}
-		else
-		{
-//			close(pfd[0]);
-//			pfd[0] = 0;
-			fd = open(pipex->infile, O_RDONLY);
-			if (fd == -1)
-				return (1);
-				//return (free_and_return(pipex, pfd, 1, PERROR));
-			else if (dup2(fd, STDIN_FILENO) == -1)
-				return (1);
-				//return (free_and_return(pipex, pfd, 1, PERROR));
-//			close(fd);
-		}
-	}
-	else
-	{
-//		close(pfd[0]);
-//		pfd[0] = 0;
-		if (dup2(pipex->pfd[1], STDIN_FILENO) == -1)
-			return (1);
-		//	return (free_and_return(pipex, pfd, 1, PERROR));
-		// recup ancienne sortie pr la rediriger en entrée 
-	}
-	if (node->next)
-	{
-//		if (pipex->pfd[1])
-//			close(pipex->pfd[1]);
-		pipex->pfd[1] = pfd[1];
-		if (dup2(pfd[1], STDOUT_FILENO) == -1)
-			return (1);
-		//	return (free_and_return(pipex, pfd, 1, PERROR));
-		// stocker la sortie dans la structure
-	}
-	else
-	{
-		//gerer le outfile
-//		close(pfd[1]);
-//		pfd[1] = 0;
-		if (pipex->here_doc)
-		{
-		}
-		else
-		{
-			fd = open(pipex->outfile, O_WRONLY | O_CREAT | O_TRUNC, 0664);
-			if (fd == -1)
-				return (1);
-				//return (free_and_return(pipex, pfd, 1, PERROR));
-			if (dup2(fd, STDOUT_FILENO) == -1)
-			{
-//				close(fd);
-				return (1);
-				//return (free_and_return(pipex, pfd, 1, PERROR));
-			}
-//			close(fd);
-		}
-	}
-	cmd_av = get_cmd_path(pipex->envp, node->content);
-	execve(cmd_av[0], cmd_av, pipex->envp);
-	//exec la cmd
-	return (1);
-//	return (free_and_return(pipex, NULL, 1, PERROR));
-}*/
-
 int	handle_child(t_pipex *pipex, int *pfd, t_list *node)
 {
-	int		fd;
 	char	**cmd_av;
 
 	if (node != pipex->cmdlist)
@@ -288,35 +212,18 @@ int	handle_child(t_pipex *pipex, int *pfd, t_list *node)
 		{
 			close(pfd[0]);
 			close(pfd[1]);
-			return (1); // gerer les fermeture de fd en cas derreur
+			return (free_and_return(pipex, 1, PERROR));
 		}
 		close((pipex->pfd)[0]);
 		close((pipex->pfd)[1]);
 	}
 	else
 	{
-		if (pipex->here_doc)
+		if (dup2(pipex->fd[0], STDIN_FILENO) == -1)
 		{
-			ft_putstr_fd("Handling here_doc: delimiter is : ", 2);
-			ft_putendl_fd(pipex->delim, 2);
-		}
-		else
-		{
-			fd = open(pipex->infile, O_RDONLY);
-			if (fd == -1)
-			{
-				close(pfd[0]);
-				close(pfd[1]);
-				return (1);
-			}
-			else if (dup2(fd, STDIN_FILENO) == -1)
-			{
-				close(fd);
-				close(pfd[0]);
-				close(pfd[1]);
-				return (1);
-			}
-			close(fd);
+			close(pfd[0]);
+			close(pfd[1]);
+			return (free_and_return(pipex, 1, PERROR));
 		}
 	}
 	if (node->next)
@@ -325,7 +232,7 @@ int	handle_child(t_pipex *pipex, int *pfd, t_list *node)
 		if (dup2(pfd[1], STDOUT_FILENO) == -1)
 		{
 			close(pfd[1]);
-			return (1); // gerer les fermeture de fd en cas derreur
+			return (free_and_return(pipex, 1, PERROR));
 		}
 		close(pfd[1]);
 	}
@@ -333,26 +240,8 @@ int	handle_child(t_pipex *pipex, int *pfd, t_list *node)
 	{
 		close(pfd[0]);
 		close(pfd[1]);
-		if (pipex->here_doc)
-		{
-		}
-		else
-		{
-			fd = open(pipex->outfile, O_WRONLY | O_CREAT | O_TRUNC, 0664);
-		}
-		if (fd == -1)
-		{
-			return (1);
-			//return (free_and_return(pipex, pfd, 1, PERROR));
-		}
-		if (dup2(fd, STDOUT_FILENO) == -1)
-		{
-			close(fd);
-			return (1);
-			//return (free_and_return(pipex, pfd, 1, PERROR));
-		}
-		close(fd);
-	 //gerer outfile
+		if (dup2(pipex->fd[1], STDOUT_FILENO) == -1)
+			return (free_and_return(pipex, 1, PERROR));
 	}
 	cmd_av = get_cmd_path(pipex->envp, node->content);
 	execve(cmd_av[0], cmd_av, pipex->envp);
@@ -370,14 +259,11 @@ int	main_loop(t_pipex *pipex)
 	while (node)
 	{
 		if (node->next && pipe(pfd) == -1)
-			return (1);
-		//	return (free_and_return(pipex, NULL, 1, PERROR));
+			return (free_and_return(pipex, 1, PERROR));
 		pid = fork();
 		if (pid == -1)
-			return (1);
-	//		return (free_and_return(pipex, pfd, 1, PERROR));
+			return (free_and_return(pipex, 1, PERROR));
 		else if (!pid)
-	//		return (1);
 			return (handle_child(pipex, pfd, node));
 		if (node != pipex->cmdlist)
 		{
@@ -394,22 +280,81 @@ int	main_loop(t_pipex *pipex)
 	return (0);
 }
 
+int	open_files(t_pipex *pipex)
+{
+	int		ret;
+	char	*line;
+
+	if (pipex->here_doc)
+	{
+		pipex->fd[0] = open(".here_doc_tmp", O_RDWR | O_CREAT | O_TRUNC, 0777);
+		if (pipex->fd[0] == -1)
+			return (free_and_return(pipex, 1, PERROR));
+		ret = 1;
+		while (ret > 0)
+		{
+			ret = get_next_line(0, &line, 0);
+			if (ret == -1)
+				return (free_and_return(pipex, 1, ERR_MALLOC));
+			if (!ft_strcmp(line, pipex->delim))
+			{
+				get_next_line(0, NULL, 1);
+				free(line);
+				break;
+			}
+			else
+			{
+				if (write(pipex->fd[0], line, ft_strlen(line)) == -1)
+				{
+					free(line);
+					get_next_line(0, NULL, 1);
+					return (free_and_return(pipex, 1, PERROR));
+				}
+				free(line);
+				if (write(pipex->fd[0], "\n", 1) == -1)
+				{
+					get_next_line(0, NULL, 1);
+					free(line);
+					return (free_and_return(pipex, 1, PERROR));
+				}
+			}
+		}
+		close(pipex->fd[0]);
+		pipex->fd[0] = open(".here_doc_tmp", O_RDONLY);
+		if (pipex->fd[0] == -1)
+			return (free_and_return(pipex, 1, PERROR));
+		pipex->fd[1] = open(pipex->outfile, O_WRONLY | O_CREAT | O_APPEND | O_TRUNC, 0664);
+	}
+	else
+	{
+		pipex->fd[0] = open(pipex->infile, O_RDONLY);
+		if (pipex->fd[0] == -1)
+			return (free_and_return(pipex, 1, PERROR));
+		pipex->fd[1] = open(pipex->outfile, O_WRONLY | O_CREAT | O_TRUNC, 0664);
+	}
+	if (pipex->fd[1] == -1)
+		return (free_and_return(pipex, 1, PERROR));
+	return (0);
+}
+
 int	init_pipex(t_pipex *pipex, int ac, char **av, char **envp)
 {
 	ft_memset(pipex, 0, sizeof(t_pipex));
 	if (ac < 5)
-		return (free_and_return(pipex, NULL, 1, ERR_TOO_FEW_ARG));
+		return (free_and_return(pipex, 1, ERR_TOO_FEW_ARG));
 	pipex->here_doc = (ft_strcmp("here_doc", av[1]) == 0);
 	if (pipex->here_doc)
 		pipex->delim = av[2];
 	else
 		pipex->infile = av[1];
 	pipex->outfile = av[ac - 1];
+	if (open_files(pipex))
+		return (free_and_return(pipex, 1, ERR_TOO_FEW_ARG));
 	pipex->envp = envp;
 	if (pipex->here_doc && ac < 6)
-		return (free_and_return(pipex, NULL, 1, ERR_TOO_FEW_ARG));
+		return (free_and_return(pipex, 1, -2));
 	if (fill_cmd_list(ac, av, pipex))
-		return (free_and_return(pipex, NULL, 1, ERR_MALLOC));
+		return (free_and_return(pipex, 1, ERR_MALLOC));
 	return (0);
 }
 
@@ -422,5 +367,5 @@ int	main(int ac, char **av, char **envp)
 	main_loop(&pipex);
 	while (errno != ECHILD)
 		wait(NULL);
-	return (free_and_return(&pipex, NULL, 1, -2));
+	return (free_and_return(&pipex, 1, -2));
 }
