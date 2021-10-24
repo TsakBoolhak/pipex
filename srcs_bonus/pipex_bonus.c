@@ -6,7 +6,7 @@
 /*   By: acabiac <acabiac@student.42.fr>            +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2021/10/14 21:43:40 by acabiac           #+#    #+#             */
-/*   Updated: 2021/10/22 16:39:47 by acabiac          ###   ########.fr       */
+/*   Updated: 2021/10/24 23:32:31 by acabiac          ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -52,19 +52,29 @@ int	fill_cmd_list(int ac, char **av, t_pipex *pipex)
 	return (0);
 }
 
-int	free_and_return(t_pipex *pipex, int ret, t_error errcode)
+int	free_and_return(t_pipex *pipex, int *pfd, int ret, t_error errcode)
 {
-	ft_lstclear(&(pipex->cmdlist), NULL);
 	if (!access(".here_doc_tmp", F_OK))
 		unlink(".here_doc_tmp");
-	if (pipex->fd[0] > 2)
-		close(pipex->fd[0]);
-	if (pipex->fd[1] > 2)
-		close(pipex->fd[1]);
-	if ((pipex->pfd)[0] > 2)
-		close((pipex->pfd)[0]);
-	if ((pipex->pfd)[1] > 2)
-		close((pipex->pfd)[1]);
+	if (pfd)
+	{
+		if (pfd[0] > 2)
+			close(pfd[0]);
+		if (pfd[1] > 2)
+			close(pfd[1]);
+	}
+	if (pipex)
+	{
+		ft_lstclear(&(pipex->cmdlist), NULL);
+		if (pipex->fd[0] > 2)
+			close(pipex->fd[0]);
+		if (pipex->fd[1] > 2)
+			close(pipex->fd[1]);
+		if ((pipex->pfd)[0] > 2)
+			close((pipex->pfd)[0]);
+		if ((pipex->pfd)[1] > 2)
+			close((pipex->pfd)[1]);
+	}
 	if (errcode > -2)
 		put_error(errcode);
 	return (ret);
@@ -202,51 +212,46 @@ char	**get_cmd_path(char *const envp[], char *cmd)
 		return (ret);
 }
 
-int	handle_child(t_pipex *pipex, int *pfd, t_list *node)
+int	handle_redirections(t_pipex *pipex, int *pfd, t_list *node)
 {
-	char	**cmd_av;
-
 	if (node != pipex->cmdlist)
 	{
 		if (dup2(pipex->pfd[0], STDIN_FILENO) == -1)
-		{
-			close(pfd[0]);
-			close(pfd[1]);
-			return (free_and_return(pipex, 1, PERROR));
-		}
+			return (free_and_return(pipex, pfd, 1, PERROR));
 		close((pipex->pfd)[0]);
 		close((pipex->pfd)[1]);
 	}
 	else
 	{
 		if (dup2(pipex->fd[0], STDIN_FILENO) == -1)
-		{
-			close(pfd[0]);
-			close(pfd[1]);
-			return (free_and_return(pipex, 1, PERROR));
-		}
+			return (free_and_return(pipex, pfd, 1, PERROR));
 	}
 	if (node->next)
 	{
-		close(pfd[0]);
 		if (dup2(pfd[1], STDOUT_FILENO) == -1)
-		{
-			close(pfd[1]);
-			return (free_and_return(pipex, 1, PERROR));
-		}
-		close(pfd[1]);
+			return (free_and_return(pipex, pfd, 1, PERROR));
 	}
 	else
 	{
-		close(pfd[0]);
-		close(pfd[1]);
 		if (dup2(pipex->fd[1], STDOUT_FILENO) == -1)
-			return (free_and_return(pipex, 1, PERROR));
+			return (free_and_return(pipex, pfd, 1, PERROR));
 	}
+	return (0);
+}
+
+int	handle_child(t_pipex *pipex, int *pfd, t_list *node)
+{
+	char	**cmd_av;
+
+	if (handle_redirections(pipex, pfd, node))
+		return (1);
+	close(pfd[0]);
+	close(pfd[1]);
 	cmd_av = get_cmd_path(pipex->envp, node->content);
+	if (cmd_av == NULL)
+		return (free_and_return(pipex, NULL, 1, -2));
 	execve(cmd_av[0], cmd_av, pipex->envp);
-	//exec la cmd
-	return (1);
+	return (free_and_return(pipex, NULL, 1, -2));
 }
 
 int	main_loop(t_pipex *pipex)
@@ -259,81 +264,91 @@ int	main_loop(t_pipex *pipex)
 	while (node)
 	{
 		if (node->next && pipe(pfd) == -1)
-			return (free_and_return(pipex, 1, PERROR));
+			return (free_and_return(pipex, NULL, 1, PERROR));
 		pid = fork();
 		if (pid == -1)
-			return (free_and_return(pipex, 1, PERROR));
+			return (free_and_return(pipex, pfd, 1, PERROR));
 		else if (!pid)
 			return (handle_child(pipex, pfd, node));
 		if (node != pipex->cmdlist)
-		{
 			close((pipex->pfd)[0]);
+		if (node != pipex->cmdlist)
 			close((pipex->pfd)[1]);
-		}
 		if (node->next)
-		{
 			(pipex->pfd)[0] = pfd[0];
+		if (node->next)
 			(pipex->pfd)[1] = pfd[1];
-		}
 		node = node->next;
 	}
 	return (0);
 }
 
-int	open_files(t_pipex *pipex)
+int	handle_heredoc(t_pipex *pipex)
 {
 	int		ret;
 	char	*line;
 
-	if (pipex->here_doc)
+	pipex->fd[0] = open(".here_doc_tmp", O_RDWR | O_CREAT | O_TRUNC, 0777);
+	if (pipex->fd[0] == -1)
+		return (free_and_return(pipex, NULL, 1, PERROR));
+	ret = 1;
+	line = NULL;
+	ft_putstr_fd("heredoc> ", 1);
+	while (ret > -1)
 	{
-		pipex->fd[0] = open(".here_doc_tmp", O_RDWR | O_CREAT | O_TRUNC, 0777);
-		if (pipex->fd[0] == -1)
-			return (free_and_return(pipex, 1, PERROR));
-		ret = 1;
-		while (ret > 0)
+		ret = get_next_line(0, &line, 0);
+		if (ret == -1)
+			return (free_and_return(pipex, NULL, 1, ERR_MALLOC));
+		else if (!ret)
+			continue ;
+		if (!ft_strcmp(line, pipex->delim))
 		{
-			ret = get_next_line(0, &line, 0);
-			if (ret == -1)
-				return (free_and_return(pipex, 1, ERR_MALLOC));
-			if (!ft_strcmp(line, pipex->delim))
+			get_next_line(0, NULL, 1);
+			free(line);
+			line = NULL;
+			break ;
+		}
+		else
+		{
+			if (write(pipex->fd[0], line, ft_strlen(line)) == -1)
+			{
+				free(line);
+				line = NULL;
+				get_next_line(0, NULL, 1);
+				return (free_and_return(pipex, NULL, 1, PERROR));
+			}
+			free(line);
+			line = NULL;
+			if (write(pipex->fd[0], "\n", 1) == -1)
 			{
 				get_next_line(0, NULL, 1);
-				free(line);
-				break;
+				return (free_and_return(pipex, NULL, 1, PERROR));
 			}
-			else
-			{
-				if (write(pipex->fd[0], line, ft_strlen(line)) == -1)
-				{
-					free(line);
-					get_next_line(0, NULL, 1);
-					return (free_and_return(pipex, 1, PERROR));
-				}
-				free(line);
-				if (write(pipex->fd[0], "\n", 1) == -1)
-				{
-					get_next_line(0, NULL, 1);
-					free(line);
-					return (free_and_return(pipex, 1, PERROR));
-				}
-			}
+			get_next_line(0, NULL, 1);
+			ft_putstr_fd("heredoc> ", 1);
 		}
-		close(pipex->fd[0]);
-		pipex->fd[0] = open(".here_doc_tmp", O_RDONLY);
-		if (pipex->fd[0] == -1)
-			return (free_and_return(pipex, 1, PERROR));
-		pipex->fd[1] = open(pipex->outfile, O_WRONLY | O_CREAT | O_APPEND | O_TRUNC, 0664);
 	}
-	else
+	close(pipex->fd[0]);
+	pipex->fd[0] = open(".here_doc_tmp", O_RDONLY);
+	if (pipex->fd[0] == -1)
+		return (free_and_return(pipex, NULL, 1, PERROR));
+	pipex->fd[1] = open(pipex->outfile, O_WRONLY | O_CREAT | O_APPEND, 0664);
+	return (0);
+}
+
+int	open_files(t_pipex *pipex)
+{
+	if (pipex->here_doc && handle_heredoc(pipex))
+		return (1);
+	else if (!pipex->here_doc)
 	{
 		pipex->fd[0] = open(pipex->infile, O_RDONLY);
 		if (pipex->fd[0] == -1)
-			return (free_and_return(pipex, 1, PERROR));
+			return (free_and_return(pipex, NULL, 1, PERROR));
 		pipex->fd[1] = open(pipex->outfile, O_WRONLY | O_CREAT | O_TRUNC, 0664);
 	}
 	if (pipex->fd[1] == -1)
-		return (free_and_return(pipex, 1, PERROR));
+		return (free_and_return(pipex, NULL, 1, PERROR));
 	return (0);
 }
 
@@ -341,7 +356,7 @@ int	init_pipex(t_pipex *pipex, int ac, char **av, char **envp)
 {
 	ft_memset(pipex, 0, sizeof(t_pipex));
 	if (ac < 5)
-		return (free_and_return(pipex, 1, ERR_TOO_FEW_ARG));
+		return (free_and_return(pipex, NULL, 1, ERR_TOO_FEW_ARG));
 	pipex->here_doc = (ft_strcmp("here_doc", av[1]) == 0);
 	if (pipex->here_doc)
 		pipex->delim = av[2];
@@ -349,12 +364,12 @@ int	init_pipex(t_pipex *pipex, int ac, char **av, char **envp)
 		pipex->infile = av[1];
 	pipex->outfile = av[ac - 1];
 	if (open_files(pipex))
-		return (free_and_return(pipex, 1, ERR_TOO_FEW_ARG));
+		return (free_and_return(pipex, NULL, 1, -2));
 	pipex->envp = envp;
 	if (pipex->here_doc && ac < 6)
-		return (free_and_return(pipex, 1, -2));
+		return (free_and_return(pipex, NULL, 1, -2));
 	if (fill_cmd_list(ac, av, pipex))
-		return (free_and_return(pipex, 1, ERR_MALLOC));
+		return (free_and_return(pipex, NULL, 1, ERR_MALLOC));
 	return (0);
 }
 
@@ -367,5 +382,5 @@ int	main(int ac, char **av, char **envp)
 	main_loop(&pipex);
 	while (errno != ECHILD)
 		wait(NULL);
-	return (free_and_return(&pipex, 1, -2));
+	return (free_and_return(&pipex, NULL, 1, -2));
 }
