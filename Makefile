@@ -3,6 +3,10 @@ SRCFOLD		= srcs/
 BONUSFOLD	= srcs_bonus/
 
 SRCS_BONUS	=	${BONUSFOLD}pipex_bonus.c \
+				${BONUSFOLD}files_init.c \
+				${BONUSFOLD}set_cmd_path.c \
+				${BONUSFOLD}init_and_free.c \
+				${BONUSFOLD}core_utils.c \
 				${BONUSFOLD}ft_strchr.c \
 				${BONUSFOLD}ft_strcmp.c \
 				${BONUSFOLD}ft_strncmp.c \
