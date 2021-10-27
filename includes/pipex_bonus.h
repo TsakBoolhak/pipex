@@ -6,7 +6,7 @@
 /*   By: acabiac <acabiac@student.42.fr>            +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2021/10/14 21:40:15 by acabiac           #+#    #+#             */
-/*   Updated: 2021/10/27 00:03:53 by acabiac          ###   ########.fr       */
+/*   Updated: 2021/10/27 16:53:41 by acabiac          ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -44,6 +44,7 @@ typedef struct s_pipex
 	char	*infile;
 	char	*outfile;
 	char	**envp;
+	char	*current_perror_content;
 }t_pipex;
 
 /*
@@ -91,8 +92,8 @@ int		handle_heredoc(t_pipex *pipex);
 /*
 ** set_cmd_path.c
 */
-char	**handle_absolute(char ***pathes, char ***ret);
-char	**handle_relative(char ***pathes, char ***ret);
+char	**handle_absolute(char ***pathes, char ***ret, char *cmd);
+char	**handle_relative(char ***pathes, char ***ret, char *cmd);
 int		check_path(char **path, char **ret, char ***pathes);
 int		check_pathes(char ***ret, char ***pathes);
 char	**get_cmd_path(char *const envp[], char *cmd);

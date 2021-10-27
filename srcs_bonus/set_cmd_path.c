@@ -6,7 +6,7 @@
 /*   By: acabiac <acabiac@student.42.fr>            +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2021/10/26 23:07:08 by acabiac           #+#    #+#             */
-/*   Updated: 2021/10/26 23:20:47 by acabiac          ###   ########.fr       */
+/*   Updated: 2021/10/27 16:53:17 by acabiac          ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -16,17 +16,17 @@
 #include <stdio.h>
 #include <errno.h>
 
-char	**handle_absolute(char ***pathes, char ***ret)
+char	**handle_absolute(char ***pathes, char ***ret, char *cmd)
 {
 	ft_free_tab((void **)*pathes);
 	if (!access((*ret)[0], X_OK))
 		return (*ret);
-	perror(NULL);
+	perror(cmd);
 	ft_free_tab((void **)*ret);
 	return (NULL);
 }
 
-char	**handle_relative(char ***pathes, char ***ret)
+char	**handle_relative(char ***pathes, char ***ret, char *cmd)
 {
 	char	*tmp;
 
@@ -34,7 +34,7 @@ char	**handle_relative(char ***pathes, char ***ret)
 	tmp = ft_strjoin("./", (*ret)[0]);
 	if (!tmp)
 	{
-		perror(NULL);
+		ft_putendl_fd("pipex_bonus: Memory allocation failed", 2);
 		ft_free_tab((void **)*ret);
 		return (NULL);
 	}
@@ -45,7 +45,7 @@ char	**handle_relative(char ***pathes, char ***ret)
 		return (*ret);
 	}
 	free(tmp);
-	perror(NULL);
+	perror(cmd);
 	ft_free_tab((void **)*ret);
 	return (NULL);
 }
@@ -56,12 +56,18 @@ int	check_path(char **path, char **ret, char ***pathes)
 
 	tmp = ft_strjoin(*path, "/");
 	if (!tmp)
+	{
+		ft_putendl_fd("pipex_bonus: Memory allocation failed", 2);
 		return (free_path_and_return(*pathes, ret, -1));
+	}
 	free(*path);
 	*path = tmp;
 	tmp = ft_strjoin(*path, *ret);
 	if (!tmp)
+	{
+		ft_putendl_fd("pipex_bonus: Memory allocation failed", 2);
 		return (free_path_and_return(*pathes, ret, -1));
+	}
 	else if (!access(tmp, X_OK))
 	{
 		free(*ret);
@@ -83,16 +89,12 @@ int	check_pathes(char ***ret, char ***pathes)
 	{
 		check = check_path(&((*pathes)[i]), &((*ret)[0]), pathes);
 		if (check == -1)
-		{
-			perror(NULL);
 			return (-1);
-		}
 		else if (!check)
 			return (0);
 		i++;
 	}
 	ft_free_tab((void **)*pathes);
-	perror(NULL);
 	ft_free_tab((void **)*ret);
 	return (-1);
 }
@@ -104,17 +106,21 @@ char	**get_cmd_path(char *const envp[], char *cmd)
 
 	if (!cmd || !*cmd)
 		return (NULL);
-	if (init_pathes(cmd, (char **)envp, &ret, &pathes))
+	if (init_pathes(cmd, (char **)envp, &ret, &pathes) || !ret || !ret[0])
 	{
-		perror(NULL);
+		ft_putendl_fd("pipex_bonus: Memory allocation failed", 2);
 		return (NULL);
 	}
 	if (ret[0][0] == '/')
-		return (handle_absolute(&pathes, &ret));
+		return (handle_absolute(&pathes, &ret, cmd));
 	else if (ft_strchr(ret[0], '/'))
-		return (handle_relative(&pathes, &ret));
+		return (handle_relative(&pathes, &ret, cmd));
 	else if (check_pathes(&ret, &pathes))
+	{
+		access(cmd, X_OK);
+		perror(cmd);
 		return (NULL);
+	}
 	else
 		return (ret);
 }

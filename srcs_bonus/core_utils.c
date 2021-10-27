@@ -6,12 +6,14 @@
 /*   By: acabiac <acabiac@student.42.fr>            +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2021/10/27 00:02:09 by acabiac           #+#    #+#             */
-/*   Updated: 2021/10/27 00:08:35 by acabiac          ###   ########.fr       */
+/*   Updated: 2021/10/27 18:13:51 by acabiac          ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
 #include "pipex_bonus.h"
 #include <unistd.h>
+#include <stdio.h>
+#include <errno.h>
 
 int	fill_cmd_list(int ac, char **av, t_pipex *pipex)
 {
@@ -70,9 +72,11 @@ int	handle_child(t_pipex *pipex, int *pfd, t_list *node)
 	close(pfd[1]);
 	cmd_av = get_cmd_path(pipex->envp, node->content);
 	if (cmd_av == NULL)
-		return (free_and_return(pipex, NULL, 1, -2));
+		return (free_and_return(pipex, pfd, 1, -2));
 	execve(cmd_av[0], cmd_av, pipex->envp);
-	return (free_and_return(pipex, NULL, 1, -2));
+	perror(cmd_av[0]);
+	ft_free_tab((void **)cmd_av);
+	return (free_and_return(pipex, pfd, 1, -2));
 }
 
 int	main_loop(t_pipex *pipex)

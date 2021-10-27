@@ -6,7 +6,7 @@
 /*   By: acabiac <acabiac@student.42.fr>            +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2021/10/26 23:47:13 by acabiac           #+#    #+#             */
-/*   Updated: 2021/10/26 23:58:50 by acabiac          ###   ########.fr       */
+/*   Updated: 2021/10/27 16:51:40 by acabiac          ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -23,7 +23,10 @@ void	put_error(t_error errcode)
 	if (errcode == PERROR)
 		perror(NULL);
 	else
-		ft_putendl_fd(err_msg[errcode], 1);
+	{
+		ft_putstr_fd("pipex_bonus: ", 2);
+		ft_putendl_fd(err_msg[errcode], 2);
+	}
 }
 
 int	free_and_return(t_pipex *pipex, int *pfd, int ret, t_error errcode)
@@ -98,7 +101,7 @@ int	init_pipex(t_pipex *pipex, int ac, char **av, char **envp)
 		return (free_and_return(pipex, NULL, 1, -2));
 	pipex->envp = envp;
 	if (pipex->here_doc && ac < 6)
-		return (free_and_return(pipex, NULL, 1, -2));
+		return (free_and_return(pipex, NULL, 1, ERR_TOO_FEW_ARG));
 	if (fill_cmd_list(ac, av, pipex))
 		return (free_and_return(pipex, NULL, 1, ERR_MALLOC));
 	return (0);
