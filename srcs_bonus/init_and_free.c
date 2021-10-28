@@ -6,7 +6,7 @@
 /*   By: acabiac <acabiac@student.42.fr>            +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2021/10/26 23:47:13 by acabiac           #+#    #+#             */
-/*   Updated: 2021/10/27 16:51:40 by acabiac          ###   ########.fr       */
+/*   Updated: 2021/10/28 17:43:58 by acabiac          ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -97,12 +97,11 @@ int	init_pipex(t_pipex *pipex, int ac, char **av, char **envp)
 	else
 		pipex->infile = av[1];
 	pipex->outfile = av[ac - 1];
-	if (open_files(pipex))
-		return (free_and_return(pipex, NULL, 1, -2));
-	pipex->envp = envp;
 	if (pipex->here_doc && ac < 6)
 		return (free_and_return(pipex, NULL, 1, ERR_TOO_FEW_ARG));
 	if (fill_cmd_list(ac, av, pipex))
 		return (free_and_return(pipex, NULL, 1, ERR_MALLOC));
+	pipex->envp = envp;
+	open_files(pipex);
 	return (0);
 }

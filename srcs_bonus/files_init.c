@@ -6,7 +6,7 @@
 /*   By: acabiac <acabiac@student.42.fr>            +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2021/10/26 22:54:10 by acabiac           #+#    #+#             */
-/*   Updated: 2021/10/27 16:52:29 by acabiac          ###   ########.fr       */
+/*   Updated: 2021/10/28 17:18:11 by acabiac          ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -16,24 +16,18 @@
 #include <fcntl.h>
 #include <unistd.h>
 #include <stdlib.h>
+#include <stdio.h>
+#include <errno.h>
 
 int	open_files(t_pipex *pipex)
 {
-	if (pipex->here_doc && handle_heredoc(pipex))
-		return (1);
-	else if (!pipex->here_doc)
+	if (pipex->here_doc)
+		handle_heredoc(pipex);
+	else
 	{
 		pipex->fd[0] = open(pipex->infile, O_RDONLY);
-		pipex->current_perror_content = pipex->infile;
-		if (pipex->fd[0] == -1)
-			return (free_and_return(pipex, NULL, 1, PERROR));
-		pipex->current_perror_content = NULL;
 		pipex->fd[1] = open(pipex->outfile, O_WRONLY | O_CREAT | O_TRUNC, 0664);
 	}
-	pipex->current_perror_content = pipex->outfile;
-	if (pipex->fd[1] == -1)
-		return (free_and_return(pipex, NULL, 1, PERROR));
-	pipex->current_perror_content = NULL;
 	return (0);
 }
 
@@ -54,7 +48,7 @@ int	heredoc_filling_loop(t_pipex *pipex)
 	{
 		ret = get_next_line(0, &line, 0);
 		if (ret == -1)
-			return (free_and_return(pipex, NULL, 1, ERR_MALLOC));
+			return (free_and_return(NULL, NULL, 1, ERR_MALLOC));
 		else if (!ret)
 			continue ;
 		if (!ft_strcmp(line, pipex->delim))
@@ -65,29 +59,31 @@ int	heredoc_filling_loop(t_pipex *pipex)
 		if (ft_putendl_fd(line, pipex->fd[0]) == -1)
 		{
 			clear_gnl_and_line(&line);
-			return (free_and_return(pipex, NULL, 1, PERROR));
+			return (free_and_return(NULL, NULL, 1, PERROR));
 		}
 		clear_gnl_and_line(&line);
 		ft_putstr_fd("heredoc> ", 1);
 	}
-	return (free_and_return(pipex, NULL, 1, PERROR));
+	return (free_and_return(NULL, NULL, 1, PERROR));
 }
 
 int	handle_heredoc(t_pipex *pipex)
 {
 	pipex->fd[0] = open(".here_doc_tmp", O_RDWR | O_CREAT | O_TRUNC, 0777);
-	pipex->current_perror_content = ".here_doc_tmp";
 	if (pipex->fd[0] == -1)
-		return (free_and_return(pipex, NULL, 1, PERROR));
-	pipex->current_perror_content = NULL;
+	{
+		perror("pipex_bonus");
+		return (1);
+	}
 	if (heredoc_filling_loop(pipex))
 		return (1);
 	close(pipex->fd[0]);
 	pipex->fd[0] = open(".here_doc_tmp", O_RDONLY);
-	pipex->current_perror_content = ".here_doc_tmp";
 	if (pipex->fd[0] == -1)
-		return (free_and_return(pipex, NULL, 1, PERROR));
-	pipex->current_perror_content = NULL;
+	{
+		perror("pipex_bonus");
+		return (1);
+	}
 	pipex->fd[1] = open(pipex->outfile, O_WRONLY | O_CREAT | O_APPEND, 0664);
 	return (0);
 }

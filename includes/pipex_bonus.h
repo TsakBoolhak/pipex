@@ -6,7 +6,7 @@
 /*   By: acabiac <acabiac@student.42.fr>            +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2021/10/14 21:40:15 by acabiac           #+#    #+#             */
-/*   Updated: 2021/10/27 16:53:41 by acabiac          ###   ########.fr       */
+/*   Updated: 2021/10/28 17:43:23 by acabiac          ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -44,7 +44,6 @@ typedef struct s_pipex
 	char	*infile;
 	char	*outfile;
 	char	**envp;
-	char	*current_perror_content;
 }t_pipex;
 
 /*
